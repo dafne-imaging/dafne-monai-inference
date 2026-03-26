@@ -8,75 +8,7 @@ from monai.transforms import (MapTransform,
                             CropForegroundd, 
                             NormalizeIntensity, 
                             SpatialCrop)
-
-
-def resample_image(image, shape, anisotrophy_flag):
-    '''
-    Docstring per resample_image
-    
-    :param image: image to resample
-    :param shape: image shape
-    :param anisotrophy_flag: True if image is anisotrophy
-    '''
-    if image.ndim == 4:
-        image_list = image
-        is_multichannel = True
-    else:
-        image_list = [image]
-        is_multichannel = False
-
-    resized_channels = []
-
-    for image_c in image_list:
-        # image_c: np.array(Depth, Height, Width)
-        
-        if anisotrophy_flag:
-            resized_slices = []
-            target_2d_shape = shape[1:]
-
-            for i in range(image_c.shape[0]):
-                image_c_2d_slice = image_c[i, :, :]
-                image_c_2d_slice = resize(
-                    image_c_2d_slice,
-                    target_2d_shape,
-                    order=3,
-                    mode="edge",
-                    cval=0,
-                    clip=True,
-                    anti_aliasing=False,
-                )
-                resized_slices.append(image_c_2d_slice)
-            resized = np.stack(resized_slices, axis=0)
-            
-            if resized.shape[0] != shape[0]:
-                resized = resize(
-                    resized,
-                    shape,
-                    order=1,
-                    mode="constant",
-                    cval=0,
-                    clip=True,
-                    anti_aliasing=False,
-                )
-            resized_channels.append(resized)
-
-        else:
-            resized = resize(
-                image_c,
-                shape,
-                order=3,
-                mode="edge",
-                cval=0,
-                clip=True,
-                anti_aliasing=False,
-            )
-            resized_channels.append(resized)
-    
-    if is_multichannel:
-        return np.stack(resized_channels, axis=0)
-    else:
-        return resized_channels[0]
-
+from .utils import resample_image
 
 
 class PreprocessAnisotropy(MapTransform):
@@ -173,6 +105,7 @@ class PreprocessAnisotropy(MapTransform):
 
         d["resample_flag"] = resample_flag
         d["anisotrophy_flag"] = anisotrophy_flag
+        d["resample_shape"] = np.array(resample_shape if resample_flag else original_shape)
 
         if self.low != 0 or self.high != 0:
             image = np.clip(image, self.low, self.high)
