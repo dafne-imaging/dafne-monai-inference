@@ -1,3 +1,4 @@
+README.md
 pyproject.toml
 setup.cfg
 src/dafne_inference/__init__.py
